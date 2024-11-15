@@ -1,0 +1,9 @@
+[project]
+name = "aoc"
+version = "0.0.1"
+
+[tool.ruff]
+line-length = 80
+
+[tool.ruff.format]
+quote-style = "single"
