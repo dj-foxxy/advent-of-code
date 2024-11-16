@@ -1,76 +1,96 @@
 #!/usr/bin/env python
 from argparse import ArgumentParser
-from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, final
+from typing import Literal, NamedTuple, final
 
 
 @final
 @dataclass(frozen=True, kw_only=True, slots=True)
 class Arguments:
     part: Literal[1, 2]
-    report_path: Path
+    input_path: Path
 
 
 def parse_args() -> Arguments:
     parser = ArgumentParser()
     parser.add_argument('part', type=int, choices=(1, 2))
-    parser.add_argument('report', type=Path)
+    parser.add_argument('input', type=Path)
     args = parser.parse_args()
-    part: Literal[1, 2] = args.part
-    report_path: Path = args.report
-    return Arguments(part=part, report_path=report_path)
+    return Arguments(part=args.part, input_path=args.input)
 
 
-def load_report(path: Path) -> list[list[int]]:
+@final
+class Tile(NamedTuple):
+    x: int
+    y: int
+
+
+@final
+class Edge(NamedTuple):
+    a: Tile
+    b: Tile
+
+from networkx import Graph, all_pairs_dijkstra_path_length, all_shortest_paths, single_source_dijkstra
+
+
+def load_input(path: Path):
+    graph: Graph[Tile] = Graph()
+    x = -1
+    y = -1
+
+    def add_pipe(dx=0, dy=0) -> None:
+        graph.add_edge(Tile(x, y), Tile(x + dx, y + dy))
+
+    start: None | Tile = None
+
     with open(path) as file:
-        return [[int(value) for value in line.split(' ')] for line in file]
+        for y, line in enumerate(file):
+            for x, tile in enumerate(line):
+                match tile:
+                    case '|':
+                        add_pipe(dy=-1)
+                        add_pipe(dy=1)
+                    case '-':
+                        add_pipe(dx=-1)
+                        add_pipe(dx=1)
+                    case 'L':
+                        add_pipe(dy=-1)
+                        add_pipe(dx=1)
+                    case 'J':
+                        add_pipe(dy=-1)
+                        add_pipe(dx=-1)
+                    case '7':
+                        add_pipe(dx=-1)
+                        add_pipe(dy=1)
+                    case 'F':
+                        add_pipe(dx=1)
+                        add_pipe(dy=1)
+                    case 'S':
+                        start = Tile(x, y)
+                    case '.' | '\n':
+                        pass
+                    case _:
+                        raise ValueError(f'invalid tile {tile!r}')
+    if start is None:
+        raise ValueError('start not found')
 
 
-def compute_differences(values: list[int]) -> list[int]:
-    return [values[i] - values[i - 1] for i in range(1, len(values))]
+    lengths = single_source_dijkstra(graph, start)[0]
+    result = max(lengths, key=lambda t: lengths[t])
+    print(lengths[result])
 
 
-def create_differences_data(values: list[int]) -> list[list[int]]:
-    data = [values]
-    while any(data[-1]):
-        data.append(compute_differences(data[-1]))
-    return data
+
+    print(graph)
 
 
-def iter_indexes(data: list[list[int]]) -> Iterable[int]:
-    return range(len(data) - 2, -1, -1)
+def part_1(input: list[list[int]]) -> int:
+    return 0
 
 
-def extrapolate_forward(data: list[list[int]]) -> int:
-    data[-1].append(0)
-    for i in iter_indexes(data):
-        data[i].append(data[i][-1] + data[i + 1][-1])
-    return data[0][-1]
-
-
-def sum_extrapolated_values(
-    report: list[list[int]],
-    extrapolate: Callable[[list[list[int]]], int],
-) -> int:
-    return sum(
-        extrapolate(create_differences_data(values)) for values in report
-    )
-
-
-def part_1(report: list[list[int]]) -> int:
-    return sum_extrapolated_values(report, extrapolate_forward)
-
-
-def extrapolate_backward(data: list[list[int]]) -> int:
-    for i in iter_indexes(data):
-        data[i].insert(0, data[i][0] - data[i + 1][0])
-    return data[0][0]
-
-
-def part_2(report: list[list[int]]) -> int:
-    return sum_extrapolated_values(report, extrapolate_backward)
+def part_2(input: list[list[int]]) -> int:
+    return 0
 
 
 def main() -> None:
@@ -80,7 +100,7 @@ def main() -> None:
             part = part_1
         case 2:
             part = part_2
-    print(part(load_report(args.report_path)))
+    print(part(load_input(args.input_path)))
 
 
 if __name__ == '__main__':
