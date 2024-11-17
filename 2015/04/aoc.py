@@ -4,10 +4,7 @@ from dataclasses import dataclass
 from hashlib import md5
 from itertools import count
 from pathlib import Path
-from typing import Final, Literal, final
-
-
-INPUT: Final = 'ckczppom'
+from typing import Literal, final
 
 
 @final
