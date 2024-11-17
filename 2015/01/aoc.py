@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from argparse import ArgumentParser
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, final
@@ -20,18 +21,18 @@ def parse_args() -> Arguments:
     return Arguments(part=args.part, input_path=args.input)
 
 
-def direction(token: str) -> Literal[1, -1]:
-    return 1 if token == '(' else -1
+def directions(input_path: Path) -> Iterator[Literal[1, -1]]:
+    return (1 if token == '(' else -1 for token in input_path.read_text())
 
 
-def part_1(input_path: Path) -> int:
-    return sum(direction(token) for token in input_path.read_text())
+def part_1(directions: Iterable[int]) -> int:
+    return sum(directions)
 
 
-def part_2(input_path: Path) -> int:
+def part_2(directions: Iterable[int]) -> int:
     floor = 0
-    for i, token in enumerate(input_path.read_text(), start=1):
-        floor += direction(token)
+    for i, direction in enumerate(directions, start=1):
+        floor += direction
         if floor < 0:
             return i
     raise RuntimeError()
@@ -44,7 +45,7 @@ def main() -> None:
             part = part_1
         case 2:
             part = part_2
-    print(part(args.input_path))
+    print(part(directions(args.input_path)))
 
 
 if __name__ == '__main__':
