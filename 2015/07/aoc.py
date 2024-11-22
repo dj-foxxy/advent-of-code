@@ -265,7 +265,12 @@ def load_circuit(path: Path) -> Circuit:
 
 
 def part_1(circuit: Circuit) -> int:
-    return circuit.wires['a'].get_value()
+    result = circuit.wires['a'].get_value()
+    for node in circuit.nodes:
+        print(node)
+    for wire in circuit.wires.values():
+        print(wire)
+    return result
 
 
 def part_2(circuit: Circuit) -> int:
