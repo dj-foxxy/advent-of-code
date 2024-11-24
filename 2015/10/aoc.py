@@ -25,21 +25,22 @@ def parse_args() -> Arguments:
 
 
 def step(input: Iterable[int]) -> list[int]:
-    count = 0
-    value = 0
-    output = []
+    it = iter(input)
+    count = 1
+    value = next(it)
+    output: list[int] = []
 
     def append() -> None:
-        if count:
-            output.append(count)
-            output.append(value)
+        output.append(count)
+        output.append(value)
 
-    for i in input:
-        if i != value:
+    for i in it:
+        if i == value:
+            count += 1
+        else:
             append()
-            count = 0
+            count = 1
             value = i
-        count += 1
 
     append()
     return output
