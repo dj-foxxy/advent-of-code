@@ -2,9 +2,8 @@
 from argparse import ArgumentParser
 from collections.abc import Iterable
 from dataclasses import dataclass
-from enum import Enum, auto, unique
 from pathlib import Path
-from typing import Literal, final
+from typing import Literal
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
@@ -37,45 +36,32 @@ def load_input(path: Path) -> Input:
         )
 
 
-@final
-@unique
-class State(Enum):
-    START = auto()
-    DETECT_DIRECTION = auto()
-    DECREASING = auto()
-    INCREASING = auto()
+def is_safe_increase(from_level: int, to_level: int) -> bool:
+    return 1 <= to_level - from_level <= 3
 
 
-def is_safe_diff(lower_level: int, higher_level: int) -> bool:
-    return 1 <= higher_level - lower_level <= 3
+def is_safe_decrease(from_level: int, to_level: int) -> bool:
+    return is_safe_increase(to_level, from_level)
 
 
 def is_safe(report: Iterable[int]) -> bool:
-    state = State.START
-    prev_level = 0
-    for level in report:
-        match state:
-            case State.START:
-                state = State.DETECT_DIRECTION
-            case State.DETECT_DIRECTION:
-                if level < prev_level:
-                    if not is_safe_diff(level, prev_level):
-                        return False
-                    state = State.DECREASING
-                elif level > prev_level:
-                    state = State.INCREASING
-                    if not is_safe_diff(prev_level, level):
-                        return False
-                else:
-                    return False
-            case State.DECREASING:
-                if not is_safe_diff(level, prev_level):
-                    return False
-            case State.INCREASING:
-                if not is_safe_diff(prev_level, level):
-                    return False
-        prev_level = level
-    return True
+    iter_levels = iter(report)
+    from_level = next(iter_levels)
+    to_level = next(iter_levels)
+
+    if to_level < from_level:
+        is_safe_change = is_safe_decrease
+    elif to_level > from_level:
+        is_safe_change = is_safe_increase
+    else:
+        return False
+
+    while is_safe_change(from_level, to_level):
+        from_level = to_level
+        if (to_level := next(iter_levels, None)) is None:
+            return True
+
+    return False
 
 
 def part_1(input: Input) -> Result:
