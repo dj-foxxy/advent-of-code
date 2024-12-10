@@ -282,17 +282,15 @@ def part_2(state: State) -> Result:
 
     obstical: MutableSet[tuple[int, int]] = set()
 
-    for i, (gr, gc, fr, fc) in enumerate(path[first_turn:]):
+    for i, (gr, gc, fr, fc) in enumerate(path[1:]):
         print(i + 1, len(path), len(obstical))
-        ngr = gr + fr
-        ngc = gc + fc
-        cell = grid[ngr][ngc]
-        if cell in {Cell.OBSTICAL, Cell.EXIT} or (ngr, ngc) in obstical:
+        cell = grid[gr][gc]
+        if cell in {Cell.OBSTICAL, Cell.EXIT} or (gr, gc) in obstical:
             continue
-        grid[ngr][ngc] = Cell.FAKE_OBSTICAL
+        grid[gr][gc] = Cell.FAKE_OBSTICAL
         if is_loop(grid, init_gr, init_gc, -1, 0):
-            obstical.add((ngr, ngc))
-        grid[ngr][ngc] = Cell.EMPTY
+            obstical.add((gr, gc))
+        grid[gr][gc] = Cell.EMPTY
 
     return len(obstical)
 
