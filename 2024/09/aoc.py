@@ -23,21 +23,48 @@ def parse_args() -> Arguments:
     return Arguments(part=args.part, input_path=input_path)
 
 
-type Input = object
+type Disk = list[int]
 
 type Result = int
 
 
-def load_input(path: Path) -> Input:
-    with open(path) as file:
-        pass
+def load_input(path: Path) -> Disk:
+    is_file = True
+    file_id = 0
+    disk: list[int] = []
+    for token in map(int, path.read_text().rstrip()):
+        if is_file:
+            sector = file_id
+            file_id += 1
+        else:
+            sector = -1
+        for _ in range(token):
+            disk.append(sector)
+        is_file = not is_file
+    return disk
 
 
-def part_1(input: Input) -> Result:
-    return 0
+def print_disk(disk: Disk) -> None:
+    for sector in disk:
+        print('.' if sector == -1 else chr(ord('0') + sector), end='')
+    print()
 
 
-def part_2(input: Input) -> Result:
+def part_1(disk: Disk) -> Result:
+    i = 0
+    j = len(disk) - 1
+    while True:
+        while disk[i] != -1:
+            i += 1
+        while disk[j] == -1:
+            j -= 1
+        if i >= j:
+            break
+        disk[i], disk[j] = disk[j], disk[i]
+    return sum(i * sector for i, sector in enumerate(disk) if sector != -1)
+
+
+def part_2(input: Disk) -> Result:
     return 0
 
 
