@@ -1,7 +1,6 @@
 #!/usr/bin/python
 from argparse import ArgumentParser
 from dataclasses import dataclass
-from os import walk
 from pathlib import Path
 from typing import Literal
 
@@ -15,7 +14,7 @@ class Arguments:
 def parse_args() -> Arguments:
     parser = ArgumentParser()
     parser.add_argument('-p', '--part', default=1, choices=(1, 2), type=int)
-    parser.add_argument('-i', '--input', type=Path)
+    parser.add_argument('input', nargs='?', type=Path)
     args = parser.parse_args()
     if args.input is None:
         input_path = Path(__file__).resolve(strict=True).parent / 'input'
@@ -41,48 +40,46 @@ def load_input(path: Path) -> Input:
 
 
 def is_feasible_v1(value: int, operands: tuple[int, ...], i: int) -> bool:
-    if not i:
-        return value == operands[0]
+    i -= 1
+    operand = operands[i]
 
-    if is_feasible_v1(value - operands[i], operands, i - 1):
+    if not i:
+        return value == operand
+
+    if is_feasible_v1(value - operand, operands, i):
         return True
 
-    next_value = value / operands[i]
-
-    # fmt: off
-    return (
-        next_value.is_integer()
-        and is_feasible_v1(int(next_value), operands, i - 1)
-    )
-    # fmt: on
+    next_value, remainder = divmod(value, operand)
+    return not remainder and is_feasible_v1(int(next_value), operands, i)
 
 
 def part_1(input: Input) -> Result:
     return sum(
         value
         for value, operands in input
-        if is_feasible_v1(value, operands, len(operands) - 1)
+        if is_feasible_v1(value, operands, len(operands))
     )
 
 
 def is_feasible_v2(value: int, operands: tuple[int, ...], i: int) -> bool:
+    i -= 1
     operand = operands[i]
 
     if not i:
         return value == operand
 
     # + Operator
-    if operand < value and is_feasible_v2(value - operand, operands, i - 1):
+    if operand < value and is_feasible_v2(value - operand, operands, i):
         return True
 
     # * Operator
     next_value, remainder = divmod(value, operand)
 
-    if not remainder and is_feasible_v2(next_value, operands, i - 1):
+    if not remainder and is_feasible_v2(next_value, operands, i):
         return True
 
     # Concat Operator
-    if operand == value:
+    if value <= 9:
         return False
 
     value_str = str(value)
@@ -91,7 +88,7 @@ def is_feasible_v2(value: int, operands: tuple[int, ...], i: int) -> bool:
     return value_str.endswith(operand_str) and is_feasible_v2(
         int(value_str.removesuffix(operand_str)),
         operands,
-        i - 1,
+        i,
     )
 
 
@@ -99,7 +96,7 @@ def part_2(input: Input) -> Result:
     return sum(
         value
         for value, operands in input
-        if is_feasible_v2(value, operands, len(operands) - 1)
+        if is_feasible_v2(value, operands, len(operands))
     )
 
 
