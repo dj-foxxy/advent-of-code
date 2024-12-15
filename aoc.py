@@ -13,7 +13,7 @@ class Arguments:
 
 def parse_args() -> Arguments:
     parser = ArgumentParser()
-    parser.add_argument('-p', '--part', default=1, choices=(1, 2), type=int)
+    parser.add_argument('part', default=1, choices=(1, 2), type=int)
     parser.add_argument('input', nargs='?', type=Path)
     args = parser.parse_args()
     if args.input is None:
