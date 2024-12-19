@@ -1,0 +1,20 @@
+Register A: 64751475
+Register B: 0
+Register C: 0
+
+Program: 2,4, 1,2, 7,5, 4,5, 1,3, 5,5, 0,3, 3,0
+
+
+bst A  Store A mod 8 into B
+bxl 2  XOR B and 2
+cdv B  Divide A by 2^B into C 
+bxc    XOR B and C into B
+bxl 3  XOR B and 3 into B
+out B  Output B mod 8
+adv 3  Divide A by 8
+jnz 0  Jump to start if A is non-zero
+
+Store the lower 3 bits of A into B
+Faff around with B and C
+Output B
+Shift off the lower 3 bits of A
