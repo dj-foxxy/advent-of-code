@@ -2,9 +2,10 @@
 from argparse import ArgumentParser
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, final
 
 
+@final
 @dataclass(frozen=True, kw_only=True, slots=True)
 class Arguments:
     part: Literal[1, 2]
