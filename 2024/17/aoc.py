@@ -2,14 +2,13 @@
 from argparse import ArgumentParser
 from contextlib import suppress
 from dataclasses import dataclass, field
-from itertools import count
 from pathlib import Path
 from typing import Final, Literal, final, override
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
 class Arguments:
-    part: Literal[1, 2, 3]
+    part: Literal[1, 2]
     input_path: Path
     start: int
 
@@ -17,7 +16,7 @@ class Arguments:
 def parse_args() -> Arguments:
     parser = ArgumentParser()
     parser.add_argument('-s', '--start', default=0, type=int)
-    parser.add_argument('part', default=1, choices=(1, 2, 3), type=int)
+    parser.add_argument('part', default=1, choices=(1, 2), type=int)
     parser.add_argument('input', nargs='?', type=Path)
     args = parser.parse_args()
     if args.input is None:
@@ -35,11 +34,37 @@ class Halt(BaseException):
 @dataclass(slots=True)
 class Machine:
     a: int
+    init_a: int = field(init=False)
     b: int
+    init_b: int = field(init=False)
     c: int
+    init_c: int = field(init=False)
     program: Final[list[int]]
     ip: int = 0
     output: Final[list[int]] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.init_a = self.a
+        self.init_b = self.b
+        self.init_c = self.c
+
+    def reset(self, a: int | None = None) -> None:
+        if a is None:
+            a = self.init_a
+        self.a = a
+        self.b = self.init_b
+        self.c = self.init_c
+        self.ip = 0
+        self.output.clear()
+
+    def run(self) -> None:
+        with suppress(Halt):
+            while True:
+                self.step()
+
+    def reset_and_run(self, a: int | None = None) -> None:
+        self.reset(a=a)
+        self.run()
 
     def state(self) -> tuple[int, ...]:
         return (self.a, self.b, self.c, self.ip, *self.output)
@@ -129,22 +154,6 @@ class Machine:
                 raise ValueError(f'invalid opcode {opcode!r}')
 
 
-@final
-class InvalidOutput(RuntimeError):
-    pass
-
-
-@final
-class Part2Machine(Machine):
-    @override
-    def out(self) -> None:
-        value = self.combo() % 8
-        if value != self.program[len(self.output)]:
-            raise InvalidOutput()
-        self.output.append(value)
-        self.inc_ip()
-
-
 def load_input(path: Path, part: Literal[1, 2, 3]) -> Machine:
     with open(path) as file:
         line_iter = iter(file)
@@ -160,77 +169,34 @@ def load_input(path: Path, part: Literal[1, 2, 3]) -> Machine:
         c = parse_reg()
         next(line_iter)
         memory = list(map(int, parse_key_value().split(',')))
-    cls = Part2Machine if part == 2 else Machine
-    return cls(a, b, c, memory)
+    return Machine(a, b, c, memory)
 
 
 def part_1(machine: Machine) -> str:
-    while True:
-        try:
-            machine.step()
-        except Halt:
-            break
-    print(machine)
+    machine.run()
     return ','.join(map(str, machine.output))
 
 
-def part_2(machine: Machine, start: int = 0) -> int:
-    unfeasible_states: set[tuple[int, ...]] = set()
-    states: list[tuple[int, ...]] = []
-    a = -1
-    b = machine.b
-    c = machine.c
-    try:
-        for a in count(start=start):
-            machine.a = a
-            try:
-                while True:
-                    state = machine.state()
-                    if state in unfeasible_states:
-                        break
-                    states.append(state)
-                    machine.step()
-            except Halt:
-                if machine.output == machine.program:
-                    return a
-            except InvalidOutput:
-                pass
-            unfeasible_states.update(states)
-            states.clear()
-            if len(unfeasible_states) > 5e7:
-                print('Clearing cache')
-                unfeasible_states.clear()
-            machine.b = b
-            machine.c = c
-            machine.output.clear()
-            machine.ip = 0
-    except KeyboardInterrupt:
-        print('Stopped at', a - 1)
-        raise
-    raise AssertionError()
+def find_a(m: Machine, i: int, a_lsb: int) -> int | None:
+    if i == len(m.program):
+        return a_lsb
+    for a_msb in range(8):
+        a = (a_msb << (8 + 3 * i)) | a_lsb
+        m.reset_and_run(a)
+        if m.output[: i + 1] == m.program[: i + 1]:
+            if (a := find_a(m, i + 1, a)) is not None:
+                return a
 
 
-def part_3(m: Machine) -> None:
-    base = 8 ** (len(m.program) - 1)
-    b = m.b
-    c = m.c
-    for a in range(base, base + 2 ** 8):
-        m.a = a
-        print(m)
-        with suppress(Halt):
-            while True:
-                m.step()
-                print(m)
-        print(a, m.output, m.program[0])
-        if m.output[:1] == m.program[:1]:
-            print(a)
-            print(len(m.program), m.program)
-            print(len(m.output), m.output)
-            break
-        m.b = b
-        m.c = c
-        m.output.clear()
-        m.ip = 0
+def part_2(machine: Machine) -> int:
+    for a_lsb in range(2**12):
+        machine.reset_and_run(a_lsb)
+        if (
+            machine.output[0] == machine.program[0]
+            and (a := find_a(machine, 1, a_lsb)) is not None
+        ):
+            return a
+    raise ValueError()
 
 
 def main() -> None:
@@ -238,11 +204,10 @@ def main() -> None:
     machine = load_input(args.input_path, args.part)
     match args.part:
         case 1:
-            print(part_1(machine))
+            part = part_1
         case 2:
-            print(part_2(machine, start=args.start))
-        case 3:
-            part_3(machine)
+            part = part_2
+    print(part(machine))
 
 
 if __name__ == '__main__':
