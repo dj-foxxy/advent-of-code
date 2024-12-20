@@ -154,7 +154,7 @@ class Machine:
                 raise ValueError(f'invalid opcode {opcode!r}')
 
 
-def load_input(path: Path, part: Literal[1, 2, 3]) -> Machine:
+def load_input(path: Path) -> Machine:
     with open(path) as file:
         line_iter = iter(file)
 
@@ -201,7 +201,7 @@ def part_2(machine: Machine) -> int:
 
 def main() -> None:
     args = parse_args()
-    machine = load_input(args.input_path, args.part)
+    machine = load_input(args.input_path)
     match args.part:
         case 1:
             part = part_1
