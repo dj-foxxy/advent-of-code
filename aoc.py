@@ -26,12 +26,13 @@ def parse_args() -> Arguments:
 
 type Input = object
 
-type Result = int
-
 
 def load_input(path: Path) -> Input:
     with open(path) as file:
         pass
+
+
+type Result = int
 
 
 def part_1(input: Input) -> Result:
