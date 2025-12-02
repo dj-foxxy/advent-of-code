@@ -46,7 +46,7 @@ fn parse_instructions(lines: Lines<BufReader<File>>) -> Option<i32> {
             Err(_) => return None,
         };
 
-        current += parse_instruction(&line)?;
+        current = (current + parse_instruction(&line)?) % 100;
 
         if current == 0 {
             password += 1;
